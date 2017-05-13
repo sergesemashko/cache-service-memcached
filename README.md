@@ -1,5 +1,7 @@
 # Cache service Memcached
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/sergesemashko/cache-service-memcached.svg)](https://greenkeeper.io/)
+
 ![](https://travis-ci.org/sergesemashko/cache-service-memcached.svg?branch=master)
 
 * A [memcached](https://www.npmjs.com/package/memcached) plugin for [cache-service](https://github.com/jpodwys/cache-service)
