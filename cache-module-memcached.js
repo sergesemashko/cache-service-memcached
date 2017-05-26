@@ -1,6 +1,8 @@
-var debug = require('debug-levels')('cache-module:memcached');
+var namespace = 'cache-module:memcached';
+var debug = require('debug-levels')(namespace);
 var Memcached = require('memcached');
-var noop = function () {};
+var noop = function () {
+};
 
 /**
  * MemcachedCacheModule constructor
@@ -8,6 +10,7 @@ var noop = function () {};
  *
  * @param locations {string|array|object} - Memcached servers location(s). @see https://www.npmjs.com/package/memcached#server-locations
  * @param options {object: {
+ *    verbose {boolean} Default: false - enables debug logging
  *    defaultLifetime {number} Default: 90 - default lifetime value in seconds
  *    backgroundRefreshIntervalCheck {boolean} Default: `true` - enables `backgroundRefreshInterval` validation. **Background refresh only**
  *    backgroundRefreshInterval {number} Default: 60000 - frequency of checking items for background refresh. This value should be less than `backgroundRefreshMinTtl`. **Background refresh only**
@@ -25,6 +28,9 @@ function MemcachedCacheModule (locations, options) {
 
   this.type = 'memcached-cache-module';
   this.storage = 'memcached';
+  if (options.verbose) {
+    require('debug').enable(namespace);
+  }
   this._backgroundRefreshEnabled = false;
   this._defaultLifetime = options.defaultLifetime || 90;
   this._refreshKeys = {};
@@ -41,16 +47,24 @@ function MemcachedCacheModule (locations, options) {
     throw new Error(msg);
   });
   this.memcachedClient.on('reconnecting', function (details) {
-    debug.warn('Total downtime caused by server ' + details.server + ': ' + details.totalDownTime + 'ms');
+    debug.warn(
+      'Total downtime caused by server ' + details.server + ': ' + details.totalDownTime + 'ms'
+    );
   });
   this.memcachedClient.on('issue', function (details) {
-    debug.warn('Total downtime caused by server ' + details.server + ': ' + details.totalDownTime + 'ms');
+    debug.warn(
+      'Total downtime caused by server ' + details.server + ': ' + details.totalDownTime + 'ms'
+    );
   });
   this.memcachedClient.on('reconnect', function (details) {
-    debug.warn('Total downtime caused by server ' + details.server + ': ' + details.totalDownTime + 'ms');
+    debug.warn(
+      'Total downtime caused by server ' + details.server + ': ' + details.totalDownTime + 'ms'
+    );
   });
   this.memcachedClient.on('remove', function (details) {
-    debug.warn('Total downtime caused by server ' + details.server + ': ' + details.totalDownTime + 'ms');
+    debug.warn(
+      'Total downtime caused by server ' + details.server + ': ' + details.totalDownTime + 'ms'
+    );
   });
 }
 
@@ -173,8 +187,31 @@ MemcachedCacheModule.prototype.mset = function (obj, lifetime, cb) {
 };
 
 MemcachedCacheModule.prototype.del = function (key, cb) {
+  var _this = this;
+  cb = cb || noop;
   debug.verbose('del() called with key=%s', key);
-  this.memcachedClient.del(key, cb);
+  if (typeof key === 'string') {
+    this.memcachedClient.del(key, cb);
+  } else if (Array.isArray(key)) {
+    Promise.all(key.map(function (key) {
+      return new Promise(function (resolve, reject) {
+        return _this.del(key, function (err, result) {
+          if (err) {
+            return reject(err);
+          }
+          return resolve(err, result);
+        });
+      });
+    }))
+      .then(function (results) {
+        cb(null, results);
+      })
+      .catch(function (error) {
+        cb(error);
+      });
+  } else {
+    cb(new Error('`key` type should be either String or Array'));
+  }
 };
 
 MemcachedCacheModule.prototype.flush = function (cb) {
@@ -183,7 +220,7 @@ MemcachedCacheModule.prototype.flush = function (cb) {
     this._backgroundRefreshEnabled = false;
     clearTimeout(this._refreshInterval);
   }
-  this.memcachedClient.flush(cb);
+  this.memcachedClient.flush(cb || noop);
 };
 
 /**
@@ -210,7 +247,10 @@ MemcachedCacheModule.prototype._backgroundRefresh = function () {
     var cachedItemMetadata = this._refreshKeys[key];
 
     if (cachedItemMetadata.expirationDate - now < this._backgroundRefreshMinTtl) {
-      cachedItemMetadata.refreshCb(key, this._handleRefreshResponse.bind(this, key, cachedItemMetadata));
+      cachedItemMetadata.refreshCb(
+        key,
+        this._handleRefreshResponse.bind(this, key, cachedItemMetadata)
+      );
     }
   }, this);
 };
@@ -234,7 +274,10 @@ MemcachedCacheModule.prototype._backgroundRefreshInit = function () {
         throw new Error('BACKGROUND_REFRESH_INTERVAL_EXCEPTION', 'backgroundRefreshInterval cannot be greater than backgroundRefreshMinTtl.');
       }
     }
-    this._refreshInterval = setInterval(this._backgroundRefresh.bind(this), this._backgroundRefreshInterval);
+    this._refreshInterval = setInterval(
+      this._backgroundRefresh.bind(this),
+      this._backgroundRefreshInterval
+    );
   }
 };
 
