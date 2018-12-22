@@ -4,7 +4,7 @@
   "description": "A memcached plugin for cache-service.",
   "main": "cache-module-memcached.js",
   "dependencies": {
-    "debug": "^3.0.0",
+    "debug": "^4.1.1",
     "debug-levels": "^0.2.0",
     "memcached": "^2.2.2"
   },
