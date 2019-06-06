@@ -14,7 +14,7 @@
     "mocha": "^3.4.2",
     "proxyquire": "^1.7.11",
     "semistandard": "^11.0.0",
-    "superagent": "^3.5.2"
+    "superagent": "^5.0.6"
   },
   "scripts": {
     "test": "npm run lint && mocha ./test/**/*.js",
