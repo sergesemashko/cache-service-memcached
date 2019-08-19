@@ -13,7 +13,7 @@
     "memcached-mock": "^0.1.0",
     "mocha": "^3.4.2",
     "proxyquire": "^1.7.11",
-    "semistandard": "^11.0.0",
+    "semistandard": "^14.0.1",
     "superagent": "^3.5.2"
   },
   "scripts": {
